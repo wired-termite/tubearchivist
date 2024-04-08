@@ -4,9 +4,10 @@ services:
   tubearchivist:
     container_name: tubearchivist
     restart: unless-stopped
-    image: bbilly1/tubearchivist
+    build: .
     ports:
       - 8000:8000
+      - 3000:3000
     volumes:
       - media:/youtube
       - cache:/cache
@@ -19,7 +20,8 @@ services:
       - TA_USERNAME=tubearchivist           # your initial TA credentials
       - TA_PASSWORD=verysecret              # your initial TA credentials
       - ELASTIC_PASSWORD=verysecret         # set password for Elasticsearch
-      - TZ=America/New_York                 # set your time zone
+      - TZ=Australia/Melbourne              # set your time zone
+      - DJANGO_DEBUG=True
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
       interval: 2m
