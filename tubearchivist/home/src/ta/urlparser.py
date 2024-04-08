@@ -43,6 +43,14 @@ class Parser:
             return self._validate_expected(youtube_id, "video")
 
         query_parsed = parse_qs(parsed.query)
+        if "viewkey" in query_parsed:
+            # video from viewkey query str
+            print("Getting viewkey")
+            print(query_parsed["viewkey"])
+            youtube_id = query_parsed["viewkey"][0]
+            item = {"type": "video", "url": parsed.geturl()}
+            return item
+
         if "v" in query_parsed:
             # video from v query str
             youtube_id = query_parsed["v"][0]

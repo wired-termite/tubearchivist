@@ -245,13 +245,13 @@ class PendingList(PendingIndex):
         bulk_list = []
 
         total = len(self.missing_videos)
-        for idx, (youtube_id, vid_type) in enumerate(self.missing_videos):
+        for idx, (url, vid_type) in enumerate(self.missing_videos):
             if self.task and self.task.is_stopped():
                 break
 
-            print(f"{youtube_id}: [{idx + 1}/{total}]: add to queue")
+            print(f"{url}: [{idx + 1}/{total}]: add to queue")
             self._notify_add(idx, total)
-            video_details = self.get_youtube_details(youtube_id, vid_type)
+            video_details = self.get_youtube_details(url, vid_type)
             if not video_details:
                 continue
 
@@ -262,12 +262,13 @@ class PendingList(PendingIndex):
                 }
             )
 
-            action = {"create": {"_id": youtube_id, "_index": "ta_download"}}
+            id = video_details["youtube_id"]
+            action = {"create": {"_id": id, "_index": "ta_download"}}
             bulk_list.append(json.dumps(action))
             bulk_list.append(json.dumps(video_details))
 
-            url = video_details["vid_thumb_url"]
-            ThumbManager(youtube_id).download_video_thumb(url)
+            thumb_url = video_details["vid_thumb_url"]
+            ThumbManager(id).download_video_thumb(thumb_url)
 
             if len(bulk_list) >= 20:
                 self._ingest_bulk(bulk_list)
@@ -304,19 +305,19 @@ class PendingList(PendingIndex):
         if not vid:
             return False
 
-        if vid.get("id") != youtube_id:
+        if vid.get("id") != youtube_id and vid.get("extractor") == "Youtube":
             # skip premium videos with different id
             print(f"{youtube_id}: skipping premium video, id not matching")
             return False
         # stop if video is streaming live now
-        if vid["live_status"] in ["is_upcoming", "is_live"]:
+        if vid.get("live_status") in ["is_upcoming", "is_live"]:
             print(f"{youtube_id}: skip is_upcoming or is_live")
             return False
 
-        if vid["live_status"] == "was_live":
+        if vid.get("live_status") == "was_live":
             vid_type = VideoTypeEnum.STREAMS
         else:
-            if self._check_shorts(vid):
+            if self._check_shorts(vid) and vid.get("extractor") == "Youtube":
                 vid_type = VideoTypeEnum.SHORTS
             else:
                 vid_type = VideoTypeEnum.VIDEOS
@@ -346,18 +347,20 @@ class PendingList(PendingIndex):
         # build dict
         youtube_details = {
             "youtube_id": vid_id,
-            "channel_name": vid["channel"],
+            "channel_name": vid.get("channel") or vid.get("uploader"),
             "vid_thumb_url": vid["thumbnail"],
             "title": vid["title"],
-            "channel_id": vid["channel_id"],
+            "channel_id": vid.get("channel_id") or vid.get("uploader_id"),
             "duration": get_duration_str(vid["duration"]),
             "published": published,
             "timestamp": int(datetime.now().timestamp()),
             # Pulling enum value out so it is serializable
             "vid_type": vid_type.value,
+            "url": vid["webpage_url"]
         }
+
         if self.all_channels:
             youtube_details.update(
-                {"channel_indexed": vid["channel_id"] in self.all_channels}
+                {"channel_indexed": youtube_details["channel_id"] in self.all_channels}
             )
         return youtube_details

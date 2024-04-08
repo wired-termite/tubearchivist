@@ -22,8 +22,9 @@ class YouTubeItem:
         "noplaylist": True,
     }
 
-    def __init__(self, youtube_id):
+    def __init__(self, youtube_id, url):
         self.youtube_id = youtube_id
+        self.url = url
         self.es_path = f"{self.index_name}/_doc/{youtube_id}"
         self.config = AppConfig().config
         self.youtube_meta = False
@@ -42,7 +43,7 @@ class YouTubeItem:
             langs_list = [i.strip() for i in langs.split(",")]
             obs_request["extractor_args"] = {"youtube": {"lang": langs_list}}
 
-        url = self.build_yt_url()
+        url = self.url or self.build_yt_url()
         self.youtube_meta = YtWrap(obs_request, self.config).extract(url)
 
     def get_from_es(self):

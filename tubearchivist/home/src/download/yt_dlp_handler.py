@@ -170,17 +170,20 @@ class VideoDownloader:
                 break
 
             youtube_id = video_data.get("youtube_id")
+            url = video_data.get("url")
             print(f"{youtube_id}: Downloading video")
             self._notify(video_data, "Validate download format")
 
-            success = self._dl_single_vid(youtube_id)
+            success = self._dl_single_vid(youtube_id, url)
             if not success:
                 continue
 
             self._notify(video_data, "Add video metadata to index", progress=1)
+            url = video_data["url"]
 
             vid_dict = index_new_video(
                 youtube_id,
+                url,
                 video_overwrites=self.video_overwrites,
                 video_type=VideoTypeEnum(video_data["vid_type"]),
             )
@@ -335,7 +338,7 @@ class VideoDownloader:
 
         return False
 
-    def _dl_single_vid(self, youtube_id):
+    def _dl_single_vid(self, youtube_id, url):
         """download single video"""
         obs = self.obs.copy()
         format_overwrite = self.get_format_overwrites(youtube_id)
@@ -350,7 +353,7 @@ class VideoDownloader:
             if youtube_id in file_name:
                 obs["outtmpl"] = os.path.join(dl_cache, file_name)
 
-        success, message = YtWrap(obs, self.config).download(youtube_id)
+        success, message = YtWrap(obs, self.config).download(url)
         if not success:
             self._handle_error(youtube_id, message)
 

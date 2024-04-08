@@ -25,8 +25,8 @@ class YoutubeChannel(YouTubeItem):
     yt_base = "https://www.youtube.com/channel/"
     yt_obs = {"playlist_items": "0,0"}
 
-    def __init__(self, youtube_id, task=False):
-        super().__init__(youtube_id)
+    def __init__(self, youtube_id, url=None, task=False):
+        super().__init__(youtube_id, url)
         self.all_playlists = False
         self.task = task
 
@@ -52,14 +52,15 @@ class YoutubeChannel(YouTubeItem):
 
     def process_youtube_meta(self):
         """extract relevant fields"""
-        self.youtube_meta["thumbnails"].reverse()
+        if self.youtube_meta.get("thumbnails") != None:
+            self.youtube_meta["thumbnails"].reverse()
         channel_subs = self.youtube_meta.get("channel_follower_count") or 0
         self.json_data = {
             "channel_active": True,
             "channel_description": self.youtube_meta.get("description", False),
             "channel_id": self.youtube_id,
             "channel_last_refresh": int(datetime.now().timestamp()),
-            "channel_name": self.youtube_meta["uploader"],
+            "channel_name": self.youtube_meta.get("uploader") or self.youtube_meta.get("id"),
             "channel_subs": channel_subs,
             "channel_subscribed": False,
             "channel_tags": self._parse_tags(self.youtube_meta.get("tags")),
@@ -79,7 +80,7 @@ class YoutubeChannel(YouTubeItem):
 
     def _get_thumb_art(self):
         """extract thumb art"""
-        for i in self.youtube_meta["thumbnails"]:
+        for i in self.youtube_meta.get("thumbnails",[]):
             if not i.get("width"):
                 continue
             if i.get("width") == i.get("height"):
@@ -89,10 +90,10 @@ class YoutubeChannel(YouTubeItem):
 
     def _get_tv_art(self):
         """extract tv artwork"""
-        for i in self.youtube_meta["thumbnails"]:
+        for i in self.youtube_meta.get("thumbnails",[]):
             if i.get("id") == "banner_uncropped":
                 return i["url"]
-        for i in self.youtube_meta["thumbnails"]:
+        for i in self.youtube_meta.get("thumbnails",[]):
             if not i.get("width"):
                 continue
             if i["width"] // i["height"] < 2 and not i["width"] == i["height"]:
@@ -102,7 +103,7 @@ class YoutubeChannel(YouTubeItem):
 
     def _get_banner_art(self):
         """extract banner artwork"""
-        for i in self.youtube_meta["thumbnails"]:
+        for i in self.youtube_meta.get("thumbnails", []):
             if not i.get("width"):
                 continue
             if i["width"] // i["height"] > 5:

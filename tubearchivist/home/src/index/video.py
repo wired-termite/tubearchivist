@@ -128,10 +128,11 @@ class YoutubeVideo(YouTubeItem, YoutubeSubtitle):
     def __init__(
         self,
         youtube_id,
+        url=None,
         video_overwrites=False,
         video_type=VideoTypeEnum.VIDEOS,
     ):
-        super().__init__(youtube_id)
+        super().__init__(youtube_id, url)
         self.channel_id = False
         self.video_overwrites = video_overwrites
         self.video_type = video_type
@@ -179,7 +180,8 @@ class YoutubeVideo(YouTubeItem, YoutubeSubtitle):
         """extract relevant fields from youtube"""
         self._validate_id()
         # extract
-        self.channel_id = self.youtube_meta["channel_id"]
+        # TODO: Reduce duplication with queue._parse_youtube_details
+        self.channel_id = self.youtube_meta.get("channel_id") or self.youtube_meta.get("uploader_id")
         upload_date = self.youtube_meta["upload_date"]
         upload_date_time = datetime.strptime(upload_date, "%Y%m%d")
         published = upload_date_time.strftime("%Y-%m-%d")
@@ -218,9 +220,15 @@ class YoutubeVideo(YouTubeItem, YoutubeSubtitle):
 
     def _add_channel(self):
         """add channel dict to video json_data"""
-        channel = ta_channel.YoutubeChannel(self.channel_id)
+        channel = ta_channel.YoutubeChannel(self.channel_id, self._build_channel_url())
         channel.build_json(upload=True, fallback=self.youtube_meta)
         self.json_data.update({"channel": channel.json_data})
+
+    def _build_channel_url(self):
+        if self.youtube_meta.get("extractor") == "PornHub":
+            uploader_id = self.youtube_meta["uploader_id"]
+            return f"https://www.pornhub.com/model/{uploader_id}"
+        return None
 
     def _add_stats(self):
         """add stats dicst to json_data"""
@@ -400,11 +408,11 @@ class YoutubeVideo(YouTubeItem, YoutubeSubtitle):
 
 
 def index_new_video(
-    youtube_id, video_overwrites=False, video_type=VideoTypeEnum.VIDEOS
+    youtube_id, url, video_overwrites=False, video_type=VideoTypeEnum.VIDEOS
 ):
     """combined classes to create new video in index"""
     video = YoutubeVideo(
-        youtube_id, video_overwrites=video_overwrites, video_type=video_type
+        youtube_id, url, video_overwrites=video_overwrites, video_type=video_type
     )
     video.build_json()
     if not video.json_data:
