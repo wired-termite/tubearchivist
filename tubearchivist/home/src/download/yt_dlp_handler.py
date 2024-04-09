@@ -377,9 +377,10 @@ class VideoDownloader:
         """move downloaded video from cache to archive"""
         host_uid = EnvironmentSettings.HOST_UID
         host_gid = EnvironmentSettings.HOST_GID
+        channel = vid_dict["channel"]
         # make folder
         folder = os.path.join(
-            self.media_dir, vid_dict["channel"]["channel_id"]
+            self.media_dir, channel.get("channel_id") or channel.get("channel_name")
         )
         if not os.path.exists(folder):
             os.makedirs(folder)

@@ -348,7 +348,7 @@ class PendingList(PendingIndex):
         youtube_details = {
             "youtube_id": vid_id,
             "channel_name": vid.get("channel") or vid.get("uploader"),
-            "vid_thumb_url": vid["thumbnail"],
+            "vid_thumb_url": vid.get("thumbnail"),
             "title": vid["title"],
             "channel_id": vid.get("channel_id") or vid.get("uploader_id"),
             "duration": get_duration_str(vid["duration"]),

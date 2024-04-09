@@ -181,7 +181,7 @@ class YoutubeVideo(YouTubeItem, YoutubeSubtitle):
         self._validate_id()
         # extract
         # TODO: Reduce duplication with queue._parse_youtube_details
-        self.channel_id = self.youtube_meta.get("channel_id") or self.youtube_meta.get("uploader_id")
+        self.channel_id = self.youtube_meta.get("channel_id") or self.youtube_meta.get("uploader_id") or self.youtube_meta.get("uploader")
         upload_date = self.youtube_meta["upload_date"]
         upload_date_time = datetime.strptime(upload_date, "%Y%m%d")
         published = upload_date_time.strftime("%Y-%m-%d")
@@ -193,7 +193,7 @@ class YoutubeVideo(YouTubeItem, YoutubeSubtitle):
             "title": self.youtube_meta["title"],
             "description": self.youtube_meta.get("description", ""),
             "category": self.youtube_meta.get("categories", []),
-            "vid_thumb_url": self.youtube_meta["thumbnail"],
+            "vid_thumb_url": self.youtube_meta.get("thumbnail"),
             "vid_thumb_base64": base64_blur,
             "tags": self.youtube_meta.get("tags", []),
             "published": published,
@@ -228,6 +228,10 @@ class YoutubeVideo(YouTubeItem, YoutubeSubtitle):
         if self.youtube_meta.get("extractor") == "PornHub":
             uploader_id = self.youtube_meta["uploader_id"]
             return f"https://www.pornhub.com/model/{uploader_id}"
+        
+        if self.youtube_meta.get("extractor") == "RedGifs":
+            uploader = self.youtube_meta["uploader"]
+            return f"https://www.redgifs.com/users/{uploader}"
         return None
 
     def _add_stats(self):
@@ -286,8 +290,9 @@ class YoutubeVideo(YouTubeItem, YoutubeSubtitle):
 
     def add_file_path(self):
         """build media_url for where file will be located"""
+        channel = self.json_data["channel"]
         self.json_data["media_url"] = os.path.join(
-            self.json_data["channel"]["channel_id"],
+            channel.get("channel_id") or channel.get("channel_name"),
             self.json_data["youtube_id"] + ".mp4",
         )
 

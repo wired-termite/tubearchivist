@@ -55,6 +55,9 @@ class Parser:
             # video from v query str
             youtube_id = query_parsed["v"][0]
             return self._validate_expected(youtube_id, "video")
+        
+        if parsed.netloc == "www.redgifs.com":
+            return {"type": "video", "url": parsed.geturl()}
 
         if "list" in query_parsed:
             # playlist from list query str
