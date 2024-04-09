@@ -43,21 +43,10 @@ class Parser:
             return self._validate_expected(youtube_id, "video")
 
         query_parsed = parse_qs(parsed.query)
-        if "viewkey" in query_parsed:
-            # video from viewkey query str
-            print("Getting viewkey")
-            print(query_parsed["viewkey"])
-            youtube_id = query_parsed["viewkey"][0]
-            item = {"type": "video", "url": parsed.geturl()}
-            return item
-
         if "v" in query_parsed:
             # video from v query str
             youtube_id = query_parsed["v"][0]
             return self._validate_expected(youtube_id, "video")
-        
-        if parsed.netloc == "www.redgifs.com":
-            return {"type": "video", "url": parsed.geturl()}
 
         if "list" in query_parsed:
             # playlist from list query str
@@ -65,6 +54,14 @@ class Parser:
             return self._validate_expected(youtube_id, "playlist")
 
         all_paths = parsed.path.strip("/").split("/")
+        if parsed.netloc == "www.redgifs.com":
+            return {"type": "video", "url": parsed.geturl()}
+        
+        if parsed.netloc == "www.pornhub.com":
+            if all_paths[0] == "model":
+                return {"type": "channel", "url": parsed.geturl()}
+            return {"type": "video", "url": parsed.geturl()}
+    
         if all_paths[0] == "shorts":
             # is shorts video
             item = self._validate_expected(all_paths[1], "video")

@@ -317,7 +317,7 @@ class PendingList(PendingIndex):
         if vid.get("live_status") == "was_live":
             vid_type = VideoTypeEnum.STREAMS
         else:
-            if self._check_shorts(vid) and vid.get("extractor") == "Youtube":
+            if vid.get("extractor") == "Youtube" and self._check_shorts(vid):
                 vid_type = VideoTypeEnum.SHORTS
             else:
                 vid_type = VideoTypeEnum.VIDEOS
@@ -327,7 +327,7 @@ class PendingList(PendingIndex):
     @staticmethod
     def _check_shorts(vid):
         """check if vid is shorts video"""
-        if vid["width"] > vid["height"]:
+        if vid.get("width") > vid.get("height"):
             return False
 
         duration = vid.get("duration")

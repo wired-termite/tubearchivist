@@ -4,6 +4,7 @@ Functionality:
 - handle playlist subscriptions
 """
 
+from urllib.parse import urlparse
 from home.src.download import queue  # partial import
 from home.src.download.thumbnails import ThumbManager
 from home.src.download.yt_dlp_base import YtWrap
@@ -38,7 +39,7 @@ class ChannelSubscription:
         return all_channels
 
     def get_last_youtube_videos(
-        self, channel_id, limit=True, query_filter=VideoTypeEnum.UNKNOWN
+        self, channel_id_or_url, limit=True, query_filter=VideoTypeEnum.UNKNOWN
     ):
         """get a list of last videos from channel"""
         queries = self._build_queries(query_filter, limit)
@@ -55,15 +56,18 @@ class ChannelSubscription:
 
             vid_type = vid_type_enum.value
             channel = YtWrap(obs, self.config).extract(
-                f"https://www.youtube.com/channel/{channel_id}/{vid_type}"
+                self._build_url(channel_id_or_url, vid_type)
             )
             if not channel:
                 continue
             last_videos.extend(
-                [(i["id"], i["title"], vid_type) for i in channel["entries"]]
+                [(i.get("id") or i.get("url"), i["title"], vid_type) for i in channel["entries"]]
             )
 
         return last_videos
+    
+    def _build_url(self, channel_id_or_url, vid_type):
+        return channel_id_or_url if urlparse(channel_id_or_url).scheme else f"https://www.youtube.com/channel/{channel_id_or_url}/{vid_type}"
 
     def _build_queries(self, query_filter, limit):
         """build query list for vid_type"""
